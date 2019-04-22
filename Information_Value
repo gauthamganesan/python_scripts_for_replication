@@ -1,0 +1,19 @@
+def iv(df,resp_col):
+    import pandas as pd
+    import numpy as np
+    
+    iv_table = pd.DataFrame([])
+    df[resp_col] = df[resp_col].astype(str)
+    for col in list(df.select_dtypes(include=[np.object]).drop([resp_col],axis=1)):
+        tab = df.groupby([col,resp_col])[resp_col].count().unstack(level=-1).apply(lambda x:x/sum(x),axis=0)
+        tab.columns=["RESP","NONRESP"]
+        tab['IV']= (tab['RESP']-tab['NONRESP'])*(np.log(tab['RESP'] / tab['NONRESP']))
+        iv_table = iv_table.append(pd.DataFrame({'col': col, 'IV': np.sum(tab['IV'])}, index=[0]), ignore_index=True)
+
+    for col in list(df.select_dtypes(exclude=[np.object])):
+        tab = df.groupby([pd.qcut(df[col].rank(method='first'), 10, labels=False),resp_col])[resp_col].count().unstack(level=-1).apply(lambda x:x/sum(x),axis=0)
+        tab.columns=["RESP","NONRESP"]
+        tab['IV']= (tab['RESP']-tab['NONRESP'])*(np.log(tab['RESP'] / tab['NONRESP']))
+        iv_table = iv_table.append(pd.DataFrame({'col': col, 'IV': np.sum(tab['IV'])}, index=[0]), ignore_index=True)
+        
+    return iv_table.sort_values(by =['IV'], ascending = False)
