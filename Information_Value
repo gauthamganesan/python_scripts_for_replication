@@ -15,5 +15,5 @@ def iv(df,resp_col):
         tab.columns=["RESP","NONRESP"]
         tab['IV']= (tab['RESP']-tab['NONRESP'])*(np.log(tab['RESP'] / tab['NONRESP']))
         iv_table = iv_table.append(pd.DataFrame({'col': col, 'IV': np.sum(tab['IV'])}, index=[0]), ignore_index=True)
-        
+        #need to group infinity and NAN values in numerical column together - WIP  . For now, fillna with -99 to procede or error is thrown
     return iv_table.sort_values(by =['IV'], ascending = False)
