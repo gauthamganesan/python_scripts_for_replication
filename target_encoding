@@ -1,0 +1,42 @@
+#The code is written for binary classification problem
+
+def target_encoding(df,dfappend,resp_col):
+  import pandas as pd
+  import numpy as np
+  
+  for col in list(dfappend.select_dtypes(include=[np.object])):
+      te_df = pd.crosstab(df[col],df[resp_col]).reset_index()
+      te_df.columns= [col,"NONRESP","RESP"]
+      te_df["TOTAL"] = te_df.RESP + te_df.NONRESP
+      te_df[col+"_RESP_PROP"] = te_df.RESP / te_df.TOTAL
+      #col+"_TOT_RESP" calculates proportion of a particular category out of all categories
+      te_df[col+"_TOT_RESP"] = te_df.TOTAL / te_df.TOTAL.sum()      
+      #col+"_RESP_PER" proportion of 1s in a particular category out of all categories
+      te_df[col+"_RESP_PER"] = te_df.RESP / te_df.RESP.sum() 
+      #col+"_NONRESP_PER" proportion of 0s in a particular category out of all categories
+      te_df[col+"_NONRESP_PER"] = te_df.NONRESP / te_df.NONRESP.sum() 
+      #Weight of Evidence, https://www.listendata.com/2015/03/weight-of-evidence-woe-and-information.html
+      te_df[col+"_WOE"] = np.log(te_df[col+"_NONRESP_PER"]) - np.log(te_df[col+"_RESP_PER"]) 
+      te_df[col+"_WOE"] = np.where((te_df[col+"_WOE"]>-999) & (te_df[col+"_WOE"]<999),te_df[col+"_WOE"],np.nan)
+      te_df[col+"logoddsratio"] = np.log(((te_df.RESP/te_df.TOTAL)*(te_df.NONRESP/te_df.TOTAL)) / (((te_df.RESP.sum() - te_df.RESP) / (te_df.TOTAL.sum() - te_df.TOTAL))*((te_df.NONRESP.sum() - te_df.NONRESP) / (te_df.TOTAL.sum() - te_df.TOTAL))))
+      #col+"_DENSITY" gives to give more weightage to frequently occuring categories with higher response rate and less weightage to sparsely occuring ones
+      te_df[col+"_DENSITY"] = te_df[col+"_RESP_PROP"]*te_df[col+"_TOT_PROP"]       
+      te_df = te_df[[col,col+"_WOE",col+"_RESP_PROP",col+"logoddsratio",col+"_DENSITY"]]
+      #merging the output of categories to the original dataset
+      dfappend = pd.merge(dfappend,te_df,how="left",on=col)
+      #dropping the original categorical variable
+      dfappend.drop(col,axis=1,inplace=True) # comment this if you don't want to lose the original categorical variable
+      
+      return dfappend
+      
+#How this works? 
+#For instance, if you wish to use this on train where target is the target variable, you would write -
+# train = target_encoding(train,train,"target")   
+ 
+#If you were to create the same variables on test , the code would be 
+# test = target_encoding(train,test,"target")  
+# dfappend is test and not train because in a real life scenariio, you wouldn't have target for your test, so train's characteristics are used..
+
+# Beware of data leakage and potential overfitting, https://machinelearningmastery.com/data-leakage-machine-learning/
+# Essentially, new variables are created based on a feature's behaviour in train, with the assumption that the 
+# test and train samples are coming from the same population and their distributions are similar 
