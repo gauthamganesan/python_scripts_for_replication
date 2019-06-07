@@ -1,6 +1,0 @@
-import pandas as pd
-
-def crosstab(table,col1,col2):
-    cross =pd.DataFrame(train.groupby([col1,col2])[col2].count().unstack(level=-1))
-    print(cross)
-    
