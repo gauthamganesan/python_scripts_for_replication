@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def resprate(table,col1, response_var):
+def resprate(table,col,response_var):
     cross =pd.DataFrame(table.groupby([col,response_var])[response_var].count().unstack(level=-1))
     cross.columns= ["nonresponse","response"]
     cross["Total"] = cross.response+cross.nonresponse
