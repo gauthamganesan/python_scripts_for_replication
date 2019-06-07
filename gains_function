@@ -1,0 +1,14 @@
+def gains(model,X,Y):
+    proba =model.predict_proba(X)[:,1]
+    opdf = pd.DataFrame({'prob':proba,"resp":Y})
+    opdf["prob_decile"] = pd.qcut(opdf["prob"].rank(method='first'), q=10, labels=False,duplicates='drop')
+    gains_table = opdf.groupby(['prob_decile']).agg({'resp': ['sum','count'],'prob': ['sum','count','max','min']})
+    gains_table["actual_resp_rate"] = gains_table["resp"]["sum"]/gains_table["resp"]["count"]
+    gains_table["pred_resp_rate"] = gains_table["prob"]["sum"]/gains_table["prob"]["count"] 
+    gains_table.sort_index(ascending=False,inplace=True)
+    gains_table["cum_gains"] = np.cumsum(gains_table["resp"]["sum"]/gains_table["reso"]["sum"].sum()
+    gains_table.columns =[["WTRESP","WTPOP","WTPREDICT","WTPRED_POP","MAX_PROB","MIN_PROB","ACTRESP","PREDRESP","CUM_GAINS"]]
+    return gains_table
+
+    gains_table = gains(model,X_test,y_test)
+    print(gains_table,"\n\n")
